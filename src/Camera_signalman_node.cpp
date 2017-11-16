@@ -68,6 +68,7 @@ void Camera_signalman_node::cameraSuscriberCallback(const sensor_msgs::Image::Co
 }
 
 bool Camera_signalman_node::setCurrentCameraSuscriber(int cameraID) {
+    if (cameraID < 0 || cameraID >= subscribers_camera_feeds_topics_.size()) return false;
     return setCurrentCameraSuscriber(subscribers_camera_feeds_topics_[cameraID]);
 }
 
@@ -76,7 +77,7 @@ bool Camera_signalman_node::setCurrentCameraSuscriber(const std::string &topic) 
     //If subscribers_camera_feeds_topics_ contains the desired topic and the current topic is not the desired topic
     if (std::any_of(subscribers_camera_feeds_topics_.begin(),
                     subscribers_camera_feeds_topics_.end(),
-                    [topic](std::string s) {return s == topic;}
+                    [topic](std::string s) {return (s == topic);}
                     )
 
         &&
@@ -116,15 +117,13 @@ bool Camera_signalman_node::selectCameraFeedServiceIDCallback(camera_signalman::
     res.old_camera_topic = currentCameraSuscriber_.getTopic();
 
     int desiredIndex = req.camera_index;
-    bool success = false;
 
-    if (desiredIndex >= 0 && desiredIndex < subscribers_camera_feeds_topics_.size())
-        success = setCurrentCameraSuscriber(desiredIndex);
+    setCurrentCameraSuscriber(desiredIndex);
 
     res.new_camera_index = getCurrentCameraIndex();
     res.new_camera_topic = currentCameraSuscriber_.getTopic();
 
-    return success;
+    return true;
 }
 
 bool Camera_signalman_node::selectCameraFeedServiceTopicCallback(camera_signalman::select_camera_feed_with_topic::Request &req,
@@ -134,15 +133,13 @@ bool Camera_signalman_node::selectCameraFeedServiceTopicCallback(camera_signalma
     res.old_camera_topic = currentCameraSuscriber_.getTopic();
 
     std::string desiredTopic = req.camera_topic;
-    bool success = false;
 
-    if (!desiredTopic.empty())
-        success = setCurrentCameraSuscriber(desiredTopic);
+    setCurrentCameraSuscriber(desiredTopic);
 
     res.new_camera_index = getCurrentCameraIndex();
     res.new_camera_topic = currentCameraSuscriber_.getTopic();
 
-    return success;
+    return true;
 }
 
 int Camera_signalman_node::getCurrentCameraIndex() const {
