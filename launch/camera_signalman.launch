@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<launch>
+
+  <!-- Load parameters -->
+  <rosparam command="load" ns="camera_signalman" file="$(find camera_signalman)/config/ros.yaml"/>
+
+  <!-- Start camera_signalman and ros wrapper -->
+  <node pkg="camera_signalman" type="camera_signalman_node" name="camera_signalman_node" output="screen"/>
+
+</launch>
