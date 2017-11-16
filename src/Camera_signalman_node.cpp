@@ -79,9 +79,13 @@ bool Camera_signalman_node::setCurrentCameraSuscriber(const std::string &topic) 
                     [topic](std::string s) {return s == topic;}
                     )
 
-        ||
+        &&
 
         topic != darknet_publisher_topic_
+
+        &&
+
+        topic != currentCameraSuscriber_.getTopic()
     ){
 
         //Shutdown old subscriber
