@@ -1,0 +1,7 @@
+<library path="lib/libnodelet_camera_signalman">
+    <class name="camera_signalman_nodelet" type="camera_signalman::camera_signalman_nodelet" base_class_type="nodelet::Nodelet">
+        <description>
+            A node to reroute camera feeds.
+        </description>
+    </class>
+</library>

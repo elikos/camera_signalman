@@ -6,6 +6,7 @@
 #define PROJECT_CAMERA_SIGNALMAN_NODE_H
 
 #include <ros/ros.h>
+#include <nodelet/nodelet.h>
 #include <sensor_msgs/Image.h>
 #include <string>
 #include <vector>
@@ -15,10 +16,10 @@
 
 namespace camera_signalman {
 
-    class Camera_signalman_node {
+    class Camera_signalman_nodelet : public nodelet::Nodelet {
 
     public:
-        explicit Camera_signalman_node(const ros::NodeHandle &nodeHandle);
+        Camera_signalman_nodelet();
 
         bool setCurrentCameraSuscriber(const std::string &topic);
 
@@ -41,6 +42,7 @@ namespace camera_signalman {
         ros::ServiceServer selectCameraTopicServiceServer_;
 
         //Init
+        void onInit() override;
         void init();
 
         bool readParameters();

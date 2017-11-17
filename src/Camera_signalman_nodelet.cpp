@@ -2,13 +2,24 @@
 // Created by technophil98 on 11/16/17.
 //
 
+#include <pluginlib/class_list_macros.h>
+#include <Camera_signalman_nodelet.h>
+
+PLUGINLIB_EXPORT_CLASS(camera_signalman::Camera_signalman_nodelet, nodelet::Nodelet)
+
 #include <algorithm>
-#include "Camera_signalman_node.h"
+#include "Camera_signalman_nodelet.h"
+
 namespace camera_signalman {
 
 
-    Camera_signalman_node::Camera_signalman_node(const ros::NodeHandle &nodeHandle) : nodeHandle_(nodeHandle) {
+    Camera_signalman_nodelet::Camera_signalman_nodelet() = default;
+
+
+    void Camera_signalman_nodelet::onInit() {
         ROS_INFO("[camera_signalman_node] Init");
+
+        nodeHandle_ = this->getPrivateNodeHandle();
 
         // Read parameters from config file.
         if (!readParameters()) {
@@ -22,7 +33,7 @@ namespace camera_signalman {
         ROS_INFO("[camera_signalman_node] Launched");
     }
 
-    bool Camera_signalman_node::readParameters() {
+    bool Camera_signalman_nodelet::readParameters() {
 
         nodeHandle_.param("/camera_signalman/subscribers/camera_feeds/topics", subscribers_camera_feeds_topics_,
                           std::vector<std::string>(0));
@@ -49,7 +60,7 @@ namespace camera_signalman {
     }
 
 
-    void Camera_signalman_node::init() {
+    void Camera_signalman_nodelet::init() {
 
         darknetPublisher_ = nodeHandle_.advertise<sensor_msgs::Image>(darknet_publisher_topic_,
                                                                       static_cast<uint32_t>(darknet_publisher_queue_size_)
@@ -60,14 +71,14 @@ namespace camera_signalman {
         setCurrentCameraSuscriber(0);
 
         selectCameraIDServiceServer_ = nodeHandle_.advertiseService("/camera_signalman/select_camera_feed_with_ID",
-                                                                    &Camera_signalman_node::selectCameraFeedServiceIDCallback,
+                                                                    &Camera_signalman_nodelet::selectCameraFeedServiceIDCallback,
                                                                     this);
         selectCameraTopicServiceServer_ = nodeHandle_.advertiseService(
                 "/camera_signalman/select_camera_feed_with_topic",
-                &Camera_signalman_node::selectCameraFeedServiceTopicCallback, this);
+                &Camera_signalman_nodelet::selectCameraFeedServiceTopicCallback, this);
     }
 
-    void Camera_signalman_node::cameraSuscriberCallback(const sensor_msgs::Image::ConstPtr &imageMsg) {
+    void Camera_signalman_nodelet::cameraSuscriberCallback(const sensor_msgs::Image::ConstPtr &imageMsg) {
 
         ROS_DEBUG("[camera_signalman_node] Received message at feed %s", currentCameraSuscriber_.getTopic().c_str());
 
@@ -77,12 +88,12 @@ namespace camera_signalman {
 
     }
 
-    bool Camera_signalman_node::setCurrentCameraSuscriber(int cameraID) {
+    bool Camera_signalman_nodelet::setCurrentCameraSuscriber(int cameraID) {
         if (cameraID < 0 || cameraID >= subscribers_camera_feeds_topics_.size()) return false;
         return setCurrentCameraSuscriber(subscribers_camera_feeds_topics_[cameraID]);
     }
 
-    bool Camera_signalman_node::setCurrentCameraSuscriber(const std::string &topic) {
+    bool Camera_signalman_nodelet::setCurrentCameraSuscriber(const std::string &topic) {
 
         //If subscribers_camera_feeds_topics_ contains the desired topic and the current topic is not the desired topic
         if (std::any_of(subscribers_camera_feeds_topics_.begin(),
@@ -104,7 +115,7 @@ namespace camera_signalman {
             //Subscribe to new topic
             currentCameraSuscriber_ = nodeHandle_.subscribe(topic,
                                                             static_cast<uint32_t>(subscribers_camera_feeds_queue_size_),
-                                                            &Camera_signalman_node::cameraSuscriberCallback,
+                                                            &Camera_signalman_nodelet::cameraSuscriberCallback,
                                                             this
             );
 
@@ -121,7 +132,7 @@ namespace camera_signalman {
     }
 
     bool
-    Camera_signalman_node::selectCameraFeedServiceIDCallback(camera_signalman::select_camera_feed_with_ID::Request &req,
+    Camera_signalman_nodelet::selectCameraFeedServiceIDCallback(camera_signalman::select_camera_feed_with_ID::Request &req,
                                                              camera_signalman::select_camera_feed_with_ID::Response &res) {
 
         res.old_camera_index = getCurrentCameraIndex();
@@ -139,7 +150,7 @@ namespace camera_signalman {
         return success;
     }
 
-    bool Camera_signalman_node::selectCameraFeedServiceTopicCallback(
+    bool Camera_signalman_nodelet::selectCameraFeedServiceTopicCallback(
             camera_signalman::select_camera_feed_with_topic::Request &req,
             camera_signalman::select_camera_feed_with_topic::Response &res) {
 
@@ -158,12 +169,11 @@ namespace camera_signalman {
         return success;
     }
 
-    int Camera_signalman_node::getCurrentCameraIndex() const {
+    int Camera_signalman_nodelet::getCurrentCameraIndex() const {
         return static_cast<int>(std::find(subscribers_camera_feeds_topics_.begin(),
                                           subscribers_camera_feeds_topics_.end(),
                                           currentCameraSuscriber_.getTopic())
                                 - subscribers_camera_feeds_topics_.begin()
         );
     }
-
 }
