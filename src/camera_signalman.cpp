@@ -3,8 +3,6 @@
 //
 
 #include "Camera_signalman_node.h"
-#include "ros/ros.h"
-
 
 
 int main(int argc, char **argv){
@@ -14,7 +12,7 @@ int main(int argc, char **argv){
 
     ros::NodeHandle nodeHandle;
 
-    Camera_signalman_node cameraSignalmanNode(nodeHandle);
+    camera_signalman::Camera_signalman_node cameraSignalmanNode(nodeHandle);
 
     ros::Rate loop_rate(15);
 

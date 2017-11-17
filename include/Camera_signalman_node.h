@@ -13,41 +13,50 @@
 #include "camera_signalman/select_camera_feed_with_ID.h"
 #include "camera_signalman/select_camera_feed_with_topic.h"
 
-class Camera_signalman_node {
+namespace camera_signalman {
 
-public:
-    explicit Camera_signalman_node(const ros::NodeHandle &nodeHandle);
-    bool setCurrentCameraSuscriber(const std::string &topic);
-    bool setCurrentCameraSuscriber(int  cameraID);
-    int getCurrentCameraIndex() const;
+    class Camera_signalman_node {
 
-private:
-    ros::NodeHandle nodeHandle_;
+    public:
+        explicit Camera_signalman_node(const ros::NodeHandle &nodeHandle);
 
-    std::string darknet_publisher_topic_;
-    int darknet_publisher_queue_size_;
-    ros::Publisher darknetPublisher_;
+        bool setCurrentCameraSuscriber(const std::string &topic);
 
-    int subscribers_camera_feeds_queue_size_;
-    std::vector<std::string> subscribers_camera_feeds_topics_;
-    ros::Subscriber currentCameraSuscriber_;
+        bool setCurrentCameraSuscriber(int cameraID);
 
-    ros::ServiceServer selectCameraIDServiceServer_;
-    ros::ServiceServer selectCameraTopicServiceServer_;
+        int getCurrentCameraIndex() const;
 
-    //Init
-    void init();
-    bool readParameters();
+    private:
+        ros::NodeHandle nodeHandle_;
 
-    //Callbacks
-    bool selectCameraFeedServiceIDCallback(camera_signalman::select_camera_feed_with_ID::Request &req,
-                                         camera_signalman::select_camera_feed_with_ID::Response &res);
-    bool selectCameraFeedServiceTopicCallback(camera_signalman::select_camera_feed_with_topic::Request &req,
-                                           camera_signalman::select_camera_feed_with_topic::Response &res);
-    void cameraSuscriberCallback(const sensor_msgs::Image::ConstPtr &imageMsg);
+        std::string darknet_publisher_topic_;
+        int darknet_publisher_queue_size_;
+        ros::Publisher darknetPublisher_;
 
-    //Private methods
+        int subscribers_camera_feeds_queue_size_;
+        std::vector<std::string> subscribers_camera_feeds_topics_;
+        ros::Subscriber currentCameraSuscriber_;
 
-};
+        ros::ServiceServer selectCameraIDServiceServer_;
+        ros::ServiceServer selectCameraTopicServiceServer_;
 
+        //Init
+        void init();
+
+        bool readParameters();
+
+        //Callbacks
+        bool selectCameraFeedServiceIDCallback(camera_signalman::select_camera_feed_with_ID::Request &req,
+                                               camera_signalman::select_camera_feed_with_ID::Response &res);
+
+        bool selectCameraFeedServiceTopicCallback(camera_signalman::select_camera_feed_with_topic::Request &req,
+                                                  camera_signalman::select_camera_feed_with_topic::Response &res);
+
+        void cameraSuscriberCallback(const sensor_msgs::Image::ConstPtr &imageMsg);
+
+        //Private methods
+
+    };
+
+}
 #endif //PROJECT_CAMERA_SIGNALMAN_NODE_H
