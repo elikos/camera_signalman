@@ -54,7 +54,7 @@ namespace camera_signalman {
         bool selectCameraFeedServiceTopicCallback(camera_signalman::select_camera_feed_with_topic::Request &req,
                                                   camera_signalman::select_camera_feed_with_topic::Response &res);
 
-        void cameraSuscriberCallback(const sensor_msgs::Image::ConstPtr &imageMsg);
+        void cameraSuscriberCallback(const sensor_msgs::Image::Ptr &imageMsg);
 
         //Private methods
 

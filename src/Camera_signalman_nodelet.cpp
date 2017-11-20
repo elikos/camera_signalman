@@ -3,12 +3,11 @@
 //
 
 #include <pluginlib/class_list_macros.h>
-#include <Camera_signalman_nodelet.h>
+#include <algorithm>
+#include "Camera_signalman_nodelet.h"
 
 PLUGINLIB_EXPORT_CLASS(camera_signalman::Camera_signalman_nodelet, nodelet::Nodelet)
 
-#include <algorithm>
-#include "Camera_signalman_nodelet.h"
 
 namespace camera_signalman {
 
@@ -78,7 +77,7 @@ namespace camera_signalman {
                 &Camera_signalman_nodelet::selectCameraFeedServiceTopicCallback, this);
     }
 
-    void Camera_signalman_nodelet::cameraSuscriberCallback(const sensor_msgs::Image::ConstPtr &imageMsg) {
+    void Camera_signalman_nodelet::cameraSuscriberCallback(const sensor_msgs::Image::Ptr &imageMsg) {
 
         ROS_DEBUG("[camera_signalman_node] Received message at feed %s", currentCameraSuscriber_.getTopic().c_str());
 
@@ -132,8 +131,9 @@ namespace camera_signalman {
     }
 
     bool
-    Camera_signalman_nodelet::selectCameraFeedServiceIDCallback(camera_signalman::select_camera_feed_with_ID::Request &req,
-                                                             camera_signalman::select_camera_feed_with_ID::Response &res) {
+    Camera_signalman_nodelet::selectCameraFeedServiceIDCallback(
+            camera_signalman::select_camera_feed_with_ID::Request &req,
+            camera_signalman::select_camera_feed_with_ID::Response &res) {
 
         res.old_camera_index = getCurrentCameraIndex();
         res.old_camera_topic = currentCameraSuscriber_.getTopic();
