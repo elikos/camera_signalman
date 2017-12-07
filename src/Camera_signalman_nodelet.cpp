@@ -145,8 +145,8 @@ namespace camera_signalman {
     }
 
     bool Camera_signalman_nodelet::selectCameraFeedServiceIDCallback(
-            camera_signalman::select_camera_feed_with_ID::Request &req,
-            camera_signalman::select_camera_feed_with_ID::Response &res
+            elikos_msgs::SelectCameraFeedWithID::Request &req,
+            elikos_msgs::SelectCameraFeedWithID::Response &res
     ) {
 
         res.old_camera_index = getCurrentCameraIndex();
@@ -165,8 +165,8 @@ namespace camera_signalman {
     }
 
     bool Camera_signalman_nodelet::selectCameraFeedServiceTopicCallback(
-            camera_signalman::select_camera_feed_with_topic::Request &req,
-            camera_signalman::select_camera_feed_with_topic::Response &res
+            elikos_msgs::SelectCameraFeedWithTopic::Request &req,
+            elikos_msgs::SelectCameraFeedWithTopic::Response &res
     ) {
 
         res.old_camera_index = getCurrentCameraIndex();

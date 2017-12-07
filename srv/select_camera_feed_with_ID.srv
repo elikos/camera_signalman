@@ -1,8 +1,0 @@
-#request fields
-int8 camera_index
----
-#response fields
-int8 old_camera_index
-string old_camera_topic
-int8 new_camera_index
-string new_camera_topic

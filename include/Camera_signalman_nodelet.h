@@ -11,8 +11,8 @@
 #include <string>
 #include <vector>
 
-#include "camera_signalman/select_camera_feed_with_ID.h"
-#include "camera_signalman/select_camera_feed_with_topic.h"
+#include <elikos_msgs/SelectCameraFeedWithTopic.h>
+#include <elikos_msgs/SelectCameraFeedWithID.h>
 
 namespace camera_signalman {
 
@@ -48,11 +48,11 @@ namespace camera_signalman {
         bool readParameters();
 
         //Callbacks
-        bool selectCameraFeedServiceIDCallback(camera_signalman::select_camera_feed_with_ID::Request &req,
-                                               camera_signalman::select_camera_feed_with_ID::Response &res);
+        bool selectCameraFeedServiceIDCallback(elikos_msgs::SelectCameraFeedWithID::Request &req,
+                                               elikos_msgs::SelectCameraFeedWithID::Response &res);
 
-        bool selectCameraFeedServiceTopicCallback(camera_signalman::select_camera_feed_with_topic::Request &req,
-                                                  camera_signalman::select_camera_feed_with_topic::Response &res);
+        bool selectCameraFeedServiceTopicCallback(elikos_msgs::SelectCameraFeedWithTopic::Request &req,
+                                                  elikos_msgs::SelectCameraFeedWithTopic::Response &res);
 
         void cameraSuscriberCallback(const sensor_msgs::Image::Ptr &imageMsg);
 

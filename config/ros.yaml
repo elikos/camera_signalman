@@ -5,11 +5,6 @@ subscribers:
       - "/cv_camera/image_raw"
     queue_size: 1
 
-#actions:
-#
-#  camera_reading:
-#    name: /darknet_ros/check_for_objects
-
 publishers:
 
   darknet_publisher:

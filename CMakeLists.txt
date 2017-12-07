@@ -10,8 +10,7 @@ add_compile_options(-std=c++11)
 find_package(catkin REQUIRED COMPONENTS
         roscpp
         sensor_msgs
-        std_msgs
-        message_generation
+        elikos_msgs
         nodelet
         )
 
@@ -56,11 +55,11 @@ find_package(catkin REQUIRED COMPONENTS
 # )
 
 ## Generate services in the 'srv' folder
-add_service_files(
-        FILES
-        select_camera_feed_with_ID.srv
-        select_camera_feed_with_topic.srv
-)
+#add_service_files(
+#        FILES
+#        select_camera_feed_with_ID.srv
+#        select_camera_feed_with_topic.srv
+#)
 
 ## Generate actions in the 'action' folder
 # add_action_files(
@@ -70,11 +69,10 @@ add_service_files(
 # )
 
 ## Generate added messages and services with any dependencies listed here
-generate_messages(
-        DEPENDENCIES
-        sensor_msgs
-        std_msgs  # Or other packages containing msgs
-)
+#generate_messages(
+#        DEPENDENCIES
+#        elikos_msgs
+#)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
