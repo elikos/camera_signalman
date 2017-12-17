@@ -72,9 +72,11 @@ namespace camera_signalman {
 
     void Camera_signalman_nodelet::init() {
 
+        imageTransport_ = std::shared_ptr<image_transport::ImageTransport>(new image_transport::ImageTransport(nodeHandle_));
+
         //Init publisher
-        publisher_ = nodeHandle_.advertise<sensor_msgs::Image>(publisher_topic_,
-                                                                      static_cast<uint32_t>(publisher_queue_size_)
+        publisher_ = imageTransport_->advertise(publisher_topic_,
+                                               static_cast<uint32_t>(publisher_queue_size_)
         );
 
         ROS_INFO("[camera_signalman_node] Publishing on %s", publisher_topic_.c_str());
@@ -95,7 +97,7 @@ namespace camera_signalman {
                                                                        this);
     }
 
-    void Camera_signalman_nodelet::cameraSuscriberCallback(const sensor_msgs::Image::Ptr &imageMsg) {
+    void Camera_signalman_nodelet::cameraSuscriberCallback(const sensor_msgs::ImageConstPtr &imageMsg) {
 
         ROS_DEBUG("[camera_signalman_node] Received message at feed %s", currentCameraSuscriber_.getTopic().c_str());
 
@@ -119,8 +121,8 @@ namespace camera_signalman {
                 topic != publisher_topic_ &&
                 topic != currentCameraSuscriber_.getTopic() &&
                 std::any_of(subscribers_camera_feeds_topics_.begin(),
-                                                  subscribers_camera_feeds_topics_.end(),
-                                                  [topic](std::string s) { return (s == topic); }
+                            subscribers_camera_feeds_topics_.end(),
+                            [topic](std::string s) { return (s == topic); }
                 );
 
         if (validTopic) {
@@ -128,10 +130,10 @@ namespace camera_signalman {
             //Shutdown old subscriber
             currentCameraSuscriber_.shutdown();
             //Subscribe to new topic
-            currentCameraSuscriber_ = nodeHandle_.subscribe(topic,
-                                                            static_cast<uint32_t>(subscribers_camera_feeds_queue_size_),
-                                                            &Camera_signalman_nodelet::cameraSuscriberCallback,
-                                                            this
+            currentCameraSuscriber_ = imageTransport_->subscribe(topic,
+                                                                static_cast<uint32_t>(subscribers_camera_feeds_queue_size_),
+                                                                &Camera_signalman_nodelet::cameraSuscriberCallback,
+                                                                this
             );
 
             ROS_INFO("Subscribed to %s", currentCameraSuscriber_.getTopic().c_str());

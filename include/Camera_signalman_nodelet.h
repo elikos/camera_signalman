@@ -9,6 +9,7 @@
 
 #include <ros/ros.h>
 #include <nodelet/nodelet.h>
+#include <image_transport/image_transport.h>
 #include <sensor_msgs/Image.h>
 #include <string>
 #include <vector>
@@ -61,6 +62,11 @@ namespace camera_signalman {
          */
         ros::NodeHandle nodeHandle_;
 
+        /*!
+         * The image transport instance linked to the node handle.
+         * A shared_ptr is used because the field has to be initialised in the Camera_signalman_nodelet::onInit method.
+         */
+        std::shared_ptr<image_transport::ImageTransport> imageTransport_;
 
 //      +--+-----------+--+
 //      |  | Publisher |  |
@@ -78,7 +84,7 @@ namespace camera_signalman {
         /*!
          * The publisher (do I really have to say more?)
          */
-        ros::Publisher publisher_;
+        image_transport::Publisher publisher_;
 
 
 //      +--+-------------+--+
@@ -97,7 +103,7 @@ namespace camera_signalman {
         /*!
          * A subscriber to the currently selected camera feed topic
          */
-        ros::Subscriber currentCameraSuscriber_;
+        image_transport::Subscriber currentCameraSuscriber_;
 
 
 //      +--+----------+--+
@@ -165,7 +171,7 @@ namespace camera_signalman {
          * This method simply re-publishes the image on with the #publisher_.
          * @param imageMsg The image sent by the camera feed
          */
-        void cameraSuscriberCallback(const sensor_msgs::Image::Ptr &imageMsg);
+        void cameraSuscriberCallback(const sensor_msgs::ImageConstPtr &imageMsg);
 
     };
 
