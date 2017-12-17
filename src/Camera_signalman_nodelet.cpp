@@ -11,10 +11,6 @@ PLUGINLIB_EXPORT_CLASS(camera_signalman::Camera_signalman_nodelet, nodelet::Node
 
 namespace camera_signalman {
 
-
-    Camera_signalman_nodelet::Camera_signalman_nodelet() = default;
-
-
     void Camera_signalman_nodelet::onInit() {
 
         ROS_INFO("Init");
@@ -53,19 +49,19 @@ namespace camera_signalman {
         }
 
         //Queue size of publisher
-        nodeHandle_.param("/camera_signalman/publishers/darknet_publisher/queue_size",
-                          darknet_publisher_queue_size_,
+        nodeHandle_.param("/camera_signalman/publisher/queue_size",
+                          publisher_queue_size_,
                           1
         );
 
         //Publisher topic
-        nodeHandle_.param("/camera_signalman/publishers/darknet_publisher/topic",
-                          darknet_publisher_topic_,
+        nodeHandle_.param("/camera_signalman/publisher/topic",
+                          publisher_topic_,
                           std::string("")
         );
 
 
-        if (darknet_publisher_topic_.empty()) {
+        if (publisher_topic_.empty()) {
             ROS_FATAL("The publish topic is not specified in config. Aboding");
             return false;
         }
@@ -77,21 +73,21 @@ namespace camera_signalman {
     void Camera_signalman_nodelet::init() {
 
         //Init publisher
-        darknetPublisher_ = nodeHandle_.advertise<sensor_msgs::Image>(darknet_publisher_topic_,
-                                                                      static_cast<uint32_t>(darknet_publisher_queue_size_)
+        publisher_ = nodeHandle_.advertise<sensor_msgs::Image>(publisher_topic_,
+                                                                      static_cast<uint32_t>(publisher_queue_size_)
         );
 
-        ROS_INFO("[camera_signalman_node] Publishing on %s", darknet_publisher_topic_.c_str());
+        ROS_INFO("[camera_signalman_node] Publishing on %s", publisher_topic_.c_str());
 
         //Init subscriber
         setCurrentCameraSuscriber(0);
 
         //Init services
 
-        //select_camera_feed_with_ID
-        selectCameraIDServiceServer_ = nodeHandle_.advertiseService("/camera_signalman/select_camera_feed_with_ID",
-                                                                    &Camera_signalman_nodelet::selectCameraFeedServiceIDCallback,
-                                                                    this);
+        //select_camera_feed_with_index
+        selectCameraIndexServiceServer_ = nodeHandle_.advertiseService("/camera_signalman/select_camera_feed_with_index",
+                                                                       &Camera_signalman_nodelet::selectCameraFeedServiceIndexCallback,
+                                                                       this);
 
         //select_camera_feed_with_topic
         selectCameraTopicServiceServer_ = nodeHandle_.advertiseService("/camera_signalman/select_camera_feed_with_topic",
@@ -103,16 +99,16 @@ namespace camera_signalman {
 
         ROS_DEBUG("[camera_signalman_node] Received message at feed %s", currentCameraSuscriber_.getTopic().c_str());
 
-        darknetPublisher_.publish(imageMsg);
+        publisher_.publish(imageMsg);
 
-        ROS_DEBUG("[camera_signalman_node] Re-published message in %s", darknet_publisher_topic_.c_str());
+        ROS_DEBUG("[camera_signalman_node] Re-published message in %s", publisher_topic_.c_str());
 
     }
 
-    bool Camera_signalman_nodelet::setCurrentCameraSuscriber(int cameraID) {
-        if (cameraID < 0 || cameraID >= subscribers_camera_feeds_topics_.size()) return false;
+    bool Camera_signalman_nodelet::setCurrentCameraSuscriber(int cameraIndex) {
+        if (cameraIndex < 0 || cameraIndex >= subscribers_camera_feeds_topics_.size()) return false;
 
-        return setCurrentCameraSuscriber(subscribers_camera_feeds_topics_[cameraID]);
+        return setCurrentCameraSuscriber(subscribers_camera_feeds_topics_[cameraIndex]);
     }
 
     bool Camera_signalman_nodelet::setCurrentCameraSuscriber(const std::string &topic) {
@@ -120,7 +116,7 @@ namespace camera_signalman {
         //If subscribers_camera_feeds_topics_ contains the desired topic and the current topic is not the desired topic
 
         bool validTopic =
-                topic != darknet_publisher_topic_ &&
+                topic != publisher_topic_ &&
                 topic != currentCameraSuscriber_.getTopic() &&
                 std::any_of(subscribers_camera_feeds_topics_.begin(),
                                                   subscribers_camera_feeds_topics_.end(),
@@ -144,41 +140,42 @@ namespace camera_signalman {
         return validTopic;
     }
 
-    bool Camera_signalman_nodelet::selectCameraFeedServiceIDCallback(
-            elikos_msgs::SelectCameraFeedWithID::Request &req,
-            elikos_msgs::SelectCameraFeedWithID::Response &res
-    ) {
-
+    bool Camera_signalman_nodelet::selectCameraFeedServiceIndexCallback(
+            elikos_msgs::SelectCameraFeedWithIndex::Request &req,
+            elikos_msgs::SelectCameraFeedWithIndex::Response &res)
+    {
         res.old_camera_index = getCurrentCameraIndex();
         res.old_camera_topic = currentCameraSuscriber_.getTopic();
 
         int desiredIndex = req.camera_index;
-        bool success = false;
 
-        if (desiredIndex >= 0 && desiredIndex < subscribers_camera_feeds_topics_.size())
-            success = setCurrentCameraSuscriber(desiredIndex);
+        setCurrentCameraSuscriber(desiredIndex);
 
         res.new_camera_index = getCurrentCameraIndex();
         res.new_camera_topic = currentCameraSuscriber_.getTopic();
 
-        return success;
+        res.has_changed = (res.old_camera_index != res.new_camera_index) && (res.old_camera_topic != res.new_camera_topic);
+
+        return true;
     }
 
-    bool Camera_signalman_nodelet::selectCameraFeedServiceTopicCallback(
-            elikos_msgs::SelectCameraFeedWithTopic::Request &req,
-            elikos_msgs::SelectCameraFeedWithTopic::Response &res
-    ) {
+    bool Camera_signalman_nodelet::selectCameraFeedServiceTopicCallback(elikos_msgs::SelectCameraFeedWithTopic::Request &req,
+                                                                        elikos_msgs::SelectCameraFeedWithTopic::Response &res)
+    {
 
         res.old_camera_index = getCurrentCameraIndex();
         res.old_camera_topic = currentCameraSuscriber_.getTopic();
 
         std::string desiredTopic = req.camera_topic;
-        bool success = setCurrentCameraSuscriber(desiredTopic);
+
+        setCurrentCameraSuscriber(desiredTopic);
 
         res.new_camera_index = getCurrentCameraIndex();
         res.new_camera_topic = currentCameraSuscriber_.getTopic();
 
-        return success;
+        res.has_changed = (res.old_camera_index != res.new_camera_index) && (res.old_camera_topic != res.new_camera_topic);
+
+        return true;
     }
 
     int Camera_signalman_nodelet::getCurrentCameraIndex() const {
