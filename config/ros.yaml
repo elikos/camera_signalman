@@ -1,10 +1,17 @@
 subscribers:
 
-  camera_feeds:
-    topics:
-      - "/cv_camera/image_raw"
-    queue_size: 1
+  camera_topics: [
+    "/cv_camera/image_raw"
+  ]
+
+  camera_frame_ids: [
+    "camera",
+  ]
+
+  queue_size: 1
 
 publisher:
+
     topic: "/camera_signalman/image_raw"
+
     queue_size: 1

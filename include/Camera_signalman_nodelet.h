@@ -14,7 +14,7 @@
 #include <string>
 #include <vector>
 
-#include <elikos_msgs/SelectCameraFeedWithTopic.h>
+#include <elikos_msgs/SelectCameraFeedWithFrameID.h>
 #include <elikos_msgs/SelectCameraFeedWithIndex.h>
 
 namespace camera_signalman {
@@ -38,7 +38,7 @@ namespace camera_signalman {
          * @param topic The topic of the camera feed to reroute
          * @return True if the topic was in the config and was successfully changed
          */
-        bool setCurrentCameraSuscriber(const std::string &topic);
+        bool setCurrentCameraSuscriber(const std::string &frameID);
 
         /*!
          * Sets the nodelet's listening topic to reroute the latter.
@@ -96,6 +96,16 @@ namespace camera_signalman {
         std::vector<std::string> subscribers_camera_feeds_topics_;
 
         /*!
+         * A vector containing the frame ids specified in the config
+         */
+        std::vector<std::string> subscribers_camera_feeds_frame_ids_;
+
+        /*!
+         * A map translating frame ids to topics
+         */
+        std::map<std::string, std::string> frameIDsAndTopicsMap_;
+
+        /*!
          * The queue size of the subscriber
          */
         int subscribers_camera_feeds_queue_size_ = 1;
@@ -103,8 +113,12 @@ namespace camera_signalman {
         /*!
          * A subscriber to the currently selected camera feed topic
          */
-        image_transport::Subscriber currentCameraSuscriber_;
+        std::vector<image_transport::Subscriber> cameraSuscribers_;
 
+        /*!
+         * The current frame ID to be republished
+         */
+        std::string currentFrameID_;
 
 //      +--+----------+--+
 //      |  | Services |  |
@@ -163,8 +177,8 @@ namespace camera_signalman {
          * @return True if the callback was executed successfully
          * @see SelectCameraFeedWithTopic.srv
          */
-        bool selectCameraFeedServiceTopicCallback(elikos_msgs::SelectCameraFeedWithTopic::Request &req,
-                                                  elikos_msgs::SelectCameraFeedWithTopic::Response &res);
+        bool selectCameraFeedServiceTopicCallback(elikos_msgs::SelectCameraFeedWithFrameID::Request &req,
+                                                  elikos_msgs::SelectCameraFeedWithFrameID::Response &res);
 
         /*!
          * The callback executed on reception of an image from the subscribed camera feed.
@@ -172,7 +186,6 @@ namespace camera_signalman {
          * @param imageMsg The image sent by the camera feed
          */
         void cameraSuscriberCallback(const sensor_msgs::ImageConstPtr &imageMsg);
-
     };
 
 }

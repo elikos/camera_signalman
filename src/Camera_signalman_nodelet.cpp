@@ -3,7 +3,6 @@
 //
 
 #include <pluginlib/class_list_macros.h>
-#include <algorithm>
 #include "Camera_signalman_nodelet.h"
 
 PLUGINLIB_EXPORT_CLASS(camera_signalman::Camera_signalman_nodelet, nodelet::Nodelet)
@@ -32,8 +31,14 @@ namespace camera_signalman {
     bool Camera_signalman_nodelet::readParameters() {
 
         //Topics to subscribe
-        nodeHandle_.param("/camera_signalman/subscribers/camera_feeds/topics",
+        nodeHandle_.param("/camera_signalman/subscribers/camera_topics",
                           subscribers_camera_feeds_topics_,
+                          std::vector<std::string>(0)
+        );
+
+        //Their frame id
+        nodeHandle_.param("/camera_signalman/subscribers/camera_frame_ids",
+                          subscribers_camera_feeds_frame_ids_,
                           std::vector<std::string>(0)
         );
 
@@ -43,10 +48,14 @@ namespace camera_signalman {
                           1
         );
 
+        //***
+
         if (subscribers_camera_feeds_topics_.empty()) {
             ROS_FATAL("No subscribed feeds are specified in config. Aboding");
             return false;
         }
+
+        //***
 
         //Queue size of publisher
         nodeHandle_.param("/camera_signalman/publisher/queue_size",
@@ -60,6 +69,7 @@ namespace camera_signalman {
                           std::string("")
         );
 
+        //***
 
         if (publisher_topic_.empty()) {
             ROS_FATAL("The publish topic is not specified in config. Aboding");
@@ -72,17 +82,34 @@ namespace camera_signalman {
 
     void Camera_signalman_nodelet::init() {
 
-        imageTransport_ = std::shared_ptr<image_transport::ImageTransport>(new image_transport::ImageTransport(nodeHandle_));
+        imageTransport_ = std::make_shared<image_transport::ImageTransport>(nodeHandle_);
 
         //Init publisher
-        publisher_ = imageTransport_->advertise(publisher_topic_,
-                                               static_cast<uint32_t>(publisher_queue_size_)
-        );
+        publisher_ = imageTransport_->advertise(publisher_topic_, static_cast<uint32_t>(publisher_queue_size_));
 
-        ROS_INFO("[camera_signalman_node] Publishing on %s", publisher_topic_.c_str());
+        ROS_INFO("[camera_signalman] Publishing on %s", publisher_topic_.c_str());
 
-        //Init subscriber
-        setCurrentCameraSuscriber(0);
+        //Matching topics and frame ids
+        for (int i = 0; i < subscribers_camera_feeds_topics_.size(); i++){
+            auto p = std::make_pair(subscribers_camera_feeds_topics_[i], subscribers_camera_feeds_frame_ids_[i]);
+            frameIDsAndTopicsMap_.insert(p);
+        }
+
+        //Init subscribers
+        for (const std::string &topic: subscribers_camera_feeds_topics_){
+            auto subscriber = imageTransport_->subscribe(topic,
+                                                         static_cast<uint32_t>(subscribers_camera_feeds_queue_size_),
+                                                         &Camera_signalman_nodelet::cameraSuscriberCallback,
+                                                         this
+            );
+            
+            ROS_INFO("[camera_signalman] Init subscriber to topic %s", topic.c_str());
+
+            cameraSuscribers_.push_back(subscriber);
+        }
+
+        //Setting current frameID to first in list
+        currentFrameID_ = subscribers_camera_feeds_frame_ids_[0];
 
         //Init services
 
@@ -99,44 +126,42 @@ namespace camera_signalman {
 
     void Camera_signalman_nodelet::cameraSuscriberCallback(const sensor_msgs::ImageConstPtr &imageMsg) {
 
-        ROS_DEBUG("[camera_signalman_node] Received message at feed %s", currentCameraSuscriber_.getTopic().c_str());
+        std::string frameID = imageMsg->header.frame_id;
+        std::string cameraTopic = frameIDsAndTopicsMap_[frameID];
 
-        publisher_.publish(imageMsg);
+        ROS_DEBUG("[camera_signalman] Received image of frame_id %s from topic %s", frameID.c_str(), cameraTopic.c_str());
 
-        ROS_DEBUG("[camera_signalman_node] Re-published message in %s", publisher_topic_.c_str());
+        if (frameID == currentFrameID_){
+            publisher_.publish(imageMsg);
+
+            ROS_DEBUG("[camera_signalman] Re-published image in %s", publisher_topic_.c_str());
+        }
 
     }
 
     bool Camera_signalman_nodelet::setCurrentCameraSuscriber(int cameraIndex) {
         if (cameraIndex < 0 || cameraIndex >= subscribers_camera_feeds_topics_.size()) return false;
 
-        return setCurrentCameraSuscriber(subscribers_camera_feeds_topics_[cameraIndex]);
+        return setCurrentCameraSuscriber(subscribers_camera_feeds_frame_ids_[cameraIndex]);
     }
 
-    bool Camera_signalman_nodelet::setCurrentCameraSuscriber(const std::string &topic) {
+    bool Camera_signalman_nodelet::setCurrentCameraSuscriber(const std::string &frameID) {
 
         //If subscribers_camera_feeds_topics_ contains the desired topic and the current topic is not the desired topic
 
         bool validTopic =
-                topic != publisher_topic_ &&
-                topic != currentCameraSuscriber_.getTopic() &&
-                std::any_of(subscribers_camera_feeds_topics_.begin(),
-                            subscribers_camera_feeds_topics_.end(),
-                            [topic](std::string s) { return (s == topic); }
+                frameID != publisher_topic_ &&
+                frameID != currentFrameID_ &&
+                std::any_of(subscribers_camera_feeds_frame_ids_.begin(),
+                            subscribers_camera_feeds_frame_ids_.end(),
+                            [frameID](std::string s) { return (s == frameID); }
                 );
 
         if (validTopic) {
 
-            //Shutdown old subscriber
-            currentCameraSuscriber_.shutdown();
-            //Subscribe to new topic
-            currentCameraSuscriber_ = imageTransport_->subscribe(topic,
-                                                                static_cast<uint32_t>(subscribers_camera_feeds_queue_size_),
-                                                                &Camera_signalman_nodelet::cameraSuscriberCallback,
-                                                                this
-            );
+            currentFrameID_ = frameID;
 
-            ROS_INFO("Subscribed to %s", currentCameraSuscriber_.getTopic().c_str());
+            ROS_INFO("Subscribed to %s (%s)", currentFrameID_.c_str(), frameIDsAndTopicsMap_[currentFrameID_].c_str());
         }
 
         return validTopic;
@@ -147,44 +172,42 @@ namespace camera_signalman {
             elikos_msgs::SelectCameraFeedWithIndex::Response &res)
     {
         res.old_camera_index = getCurrentCameraIndex();
-        res.old_camera_topic = currentCameraSuscriber_.getTopic();
+        res.old_camera_frame_id = currentFrameID_;
 
         int desiredIndex = req.camera_index;
 
         setCurrentCameraSuscriber(desiredIndex);
 
         res.new_camera_index = getCurrentCameraIndex();
-        res.new_camera_topic = currentCameraSuscriber_.getTopic();
+        res.new_camera_frame_id = currentFrameID_;
 
-        res.has_changed = (res.old_camera_index != res.new_camera_index) && (res.old_camera_topic != res.new_camera_topic);
+        res.has_changed = (res.old_camera_index != res.new_camera_index) && (res.old_camera_frame_id != res.new_camera_frame_id);
 
         return true;
     }
 
-    bool Camera_signalman_nodelet::selectCameraFeedServiceTopicCallback(elikos_msgs::SelectCameraFeedWithTopic::Request &req,
-                                                                        elikos_msgs::SelectCameraFeedWithTopic::Response &res)
+    bool Camera_signalman_nodelet::selectCameraFeedServiceTopicCallback(elikos_msgs::SelectCameraFeedWithFrameID::Request &req,
+                                                                        elikos_msgs::SelectCameraFeedWithFrameID::Response &res)
     {
 
         res.old_camera_index = getCurrentCameraIndex();
-        res.old_camera_topic = currentCameraSuscriber_.getTopic();
+        res.old_camera_frame_id = currentFrameID_;
 
-        std::string desiredTopic = req.camera_topic;
-
-        setCurrentCameraSuscriber(desiredTopic);
+        setCurrentCameraSuscriber(currentFrameID_);
 
         res.new_camera_index = getCurrentCameraIndex();
-        res.new_camera_topic = currentCameraSuscriber_.getTopic();
+        res.new_camera_frame_id = currentFrameID_;
 
-        res.has_changed = (res.old_camera_index != res.new_camera_index) && (res.old_camera_topic != res.new_camera_topic);
+        res.has_changed = (res.old_camera_index != res.new_camera_index) && (res.old_camera_frame_id != res.new_camera_frame_id);
 
         return true;
     }
 
     int Camera_signalman_nodelet::getCurrentCameraIndex() const {
-        return static_cast<int>(std::find(subscribers_camera_feeds_topics_.begin(),
-                                          subscribers_camera_feeds_topics_.end(),
-                                          currentCameraSuscriber_.getTopic())
-                                - subscribers_camera_feeds_topics_.begin()
+        return static_cast<int>(std::find(subscribers_camera_feeds_frame_ids_.begin(),
+                                          subscribers_camera_feeds_frame_ids_.end(),
+                                          currentFrameID_)
+                                - subscribers_camera_feeds_frame_ids_.begin()
         );
     }
 }
