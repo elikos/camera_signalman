@@ -16,6 +16,7 @@
 
 #include <elikos_msgs/SelectCameraFeedWithFrameID.h>
 #include <elikos_msgs/SelectCameraFeedWithIndex.h>
+#include <elikos_msgs/SweepCameras.h>
 
 namespace camera_signalman {
 
@@ -134,6 +135,13 @@ namespace camera_signalman {
          */
         ros::ServiceServer selectCameraTopicServiceServer_;
 
+        ros::ServiceServer sweepCamerasServiceServer_;
+
+
+        ros::Timer sweepTimer_;
+
+        long sweepStartIndex_;
+        long sweepcurrentIndex_;
 
 //      +--+------+--+
 //      |  | Init |  |
@@ -179,6 +187,11 @@ namespace camera_signalman {
          */
         bool selectCameraFeedServiceTopicCallback(elikos_msgs::SelectCameraFeedWithFrameID::Request &req,
                                                   elikos_msgs::SelectCameraFeedWithFrameID::Response &res);
+
+        bool sweepCamerasServiceCallback(elikos_msgs::SweepCameras::Request &req,
+                                         elikos_msgs::SweepCameras::Response &res);
+
+        void sweepTimerCallback(const ros::TimerEvent& event);
 
         /*!
          * The callback executed on reception of an image from the subscribed camera feed.

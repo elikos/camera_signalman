@@ -122,6 +122,15 @@ namespace camera_signalman {
         selectCameraTopicServiceServer_ = nodeHandle_.advertiseService("/camera_signalman/select_camera_feed_with_topic",
                                                                        &Camera_signalman_nodelet::selectCameraFeedServiceTopicCallback,
                                                                        this);
+
+        sweepTimer_ = nodeHandle_.createTimer(ros::Duration(1.0),
+                                              &Camera_signalman_nodelet::sweepTimerCallback,
+                                              this);
+
+        //sweep_cameras
+        sweepCamerasServiceServer_ = nodeHandle_.advertiseService("/camera_signalman/sweep_cameras",
+                                                                   &Camera_signalman_nodelet::sweepCamerasServiceCallback,
+                                                                   this);
     }
 
     void Camera_signalman_nodelet::cameraSuscriberCallback(const sensor_msgs::ImageConstPtr &imageMsg) {
@@ -209,5 +218,35 @@ namespace camera_signalman {
                                           currentFrameID_)
                                 - subscribers_camera_feeds_frame_ids_.begin()
         );
+    }
+
+    bool Camera_signalman_nodelet::sweepCamerasServiceCallback(elikos_msgs::SweepCameras::Request &req,
+                                                               elikos_msgs::SweepCameras::Response &res) {
+        int msPerCam = (req.ms_per_cam == 0) ? 1000 : req.ms_per_cam;
+
+        if (sweepTimer_.hasPending()) //Do not override sweep
+            return false;
+
+        sweepcurrentIndex_ = distance(subscribers_camera_feeds_frame_ids_.begin(),
+                                 std::find(subscribers_camera_feeds_frame_ids_.begin(),
+                                           subscribers_camera_feeds_frame_ids_.end(),
+                                           currentFrameID_)
+                                );
+
+        sweepStartIndex_ = sweepcurrentIndex_;
+
+        sweepTimer_.setPeriod(ros::Duration(msPerCam/1000));
+        sweepTimer_.start();
+
+        return true;
+    }
+
+    void Camera_signalman_nodelet::sweepTimerCallback(const ros::TimerEvent &event) {
+
+        sweepcurrentIndex_ = (sweepcurrentIndex_ + 1) % subscribers_camera_feeds_frame_ids_.size();
+        currentFrameID_ = subscribers_camera_feeds_frame_ids_[sweepcurrentIndex_];
+
+        if (sweepcurrentIndex_ == sweepStartIndex_)
+            sweepTimer_.stop();
     }
 }
