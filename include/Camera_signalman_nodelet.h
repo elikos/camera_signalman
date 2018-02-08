@@ -131,16 +131,28 @@ namespace camera_signalman {
         ros::ServiceServer selectCameraIndexServiceServer_;
 
         /*!
-         * The service server for the selection of the current feed by topic.
+         * The service server for the selection of the current feed by frame ID.
          */
-        ros::ServiceServer selectCameraTopicServiceServer_;
+        ros::ServiceServer selectCameraFrameIDServiceServer_;
 
+        /*!
+         * The service server for executing sweep.
+         */
         ros::ServiceServer sweepCamerasServiceServer_;
 
-
+        /*!
+         * The timer ticking every time the cameras has to change
+         */
         ros::Timer sweepTimer_;
 
+        /*!
+         * The index at which the sweep started
+         */
         long sweepStartIndex_;
+
+        /*!
+         * The current index of the sweeping process
+         */
         long sweepcurrentIndex_;
 
 //      +--+------+--+
@@ -179,18 +191,28 @@ namespace camera_signalman {
                                                   elikos_msgs::SelectCameraFeedWithIndex::Response &res);
 
         /*!
-         * The callback upon reception of a SelectCameraFeedWithTopic service message
+         * The callback upon reception of a SelectCameraFeedWithFrameID service message
          * @param req The request message with the desired feed index
          * @param res The response sent to the client with the result of the callback
          * @return True if the callback was executed successfully
-         * @see SelectCameraFeedWithTopic.srv
+         * @see SelectCameraFeedWithFrameID.srv
          */
-        bool selectCameraFeedServiceTopicCallback(elikos_msgs::SelectCameraFeedWithFrameID::Request &req,
-                                                  elikos_msgs::SelectCameraFeedWithFrameID::Response &res);
+        bool selectCameraFeedServiceFrameIDCallback(elikos_msgs::SelectCameraFeedWithFrameID::Request &req,
+                                                    elikos_msgs::SelectCameraFeedWithFrameID::Response &res);
 
+        /*!
+         * The callback upon reception of a SweepCameras service message
+         * @param req The request message with the desired time per camera
+         * @param res The response sent to the client with the result of the callback
+         * @return SweepCameras.srv
+         */
         bool sweepCamerasServiceCallback(elikos_msgs::SweepCameras::Request &req,
                                          elikos_msgs::SweepCameras::Response &res);
 
+        /*!
+         * The callback executed at each timer tick
+         * @param event The timer event associated
+         */
         void sweepTimerCallback(const ros::TimerEvent& event);
 
         /*!

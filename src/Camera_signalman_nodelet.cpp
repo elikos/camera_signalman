@@ -119,8 +119,8 @@ namespace camera_signalman {
                                                                        this);
 
         //select_camera_feed_with_topic
-        selectCameraTopicServiceServer_ = nodeHandle_.advertiseService("/camera_signalman/select_camera_feed_with_topic",
-                                                                       &Camera_signalman_nodelet::selectCameraFeedServiceTopicCallback,
+        selectCameraFrameIDServiceServer_ = nodeHandle_.advertiseService("/camera_signalman/select_camera_feed_with_frame_id",
+                                                                       &Camera_signalman_nodelet::selectCameraFeedServiceFrameIDCallback,
                                                                        this);
 
         sweepTimer_ = nodeHandle_.createTimer(ros::Duration(1.0),
@@ -195,8 +195,8 @@ namespace camera_signalman {
         return true;
     }
 
-    bool Camera_signalman_nodelet::selectCameraFeedServiceTopicCallback(elikos_msgs::SelectCameraFeedWithFrameID::Request &req,
-                                                                        elikos_msgs::SelectCameraFeedWithFrameID::Response &res)
+    bool Camera_signalman_nodelet::selectCameraFeedServiceFrameIDCallback(elikos_msgs::SelectCameraFeedWithFrameID::Request &req,
+                                                                          elikos_msgs::SelectCameraFeedWithFrameID::Response &res)
     {
 
         res.old_camera_index = getCurrentCameraIndex();
@@ -222,6 +222,7 @@ namespace camera_signalman {
 
     bool Camera_signalman_nodelet::sweepCamerasServiceCallback(elikos_msgs::SweepCameras::Request &req,
                                                                elikos_msgs::SweepCameras::Response &res) {
+
         int msPerCam = (req.ms_per_cam == 0) ? 1000 : req.ms_per_cam;
 
         if (sweepTimer_.hasPending()) //Do not override sweep
