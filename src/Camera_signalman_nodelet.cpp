@@ -185,6 +185,9 @@ namespace camera_signalman {
 
         int desiredIndex = req.camera_index;
 
+        if (sweepTimer_.hasPending()) //If sweep is running, stop
+            sweepTimer_.stop();
+
         setCurrentCameraSuscriber(desiredIndex);
 
         res.new_camera_index = getCurrentCameraIndex();
@@ -201,6 +204,9 @@ namespace camera_signalman {
 
         res.old_camera_index = getCurrentCameraIndex();
         res.old_camera_frame_id = currentFrameID_;
+
+        if (sweepTimer_.hasPending()) //If sweep is running, stop
+            sweepTimer_.stop();
 
         setCurrentCameraSuscriber(currentFrameID_);
 
