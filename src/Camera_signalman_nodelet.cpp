@@ -185,8 +185,7 @@ namespace camera_signalman {
 
         int desiredIndex = req.camera_index;
 
-        if (sweepTimer_.hasPending()) //If sweep is running, stop
-            sweepTimer_.stop();
+        sweepTimer_.stop();
 
         setCurrentCameraSuscriber(desiredIndex);
 
@@ -205,10 +204,9 @@ namespace camera_signalman {
         res.old_camera_index = getCurrentCameraIndex();
         res.old_camera_frame_id = currentFrameID_;
 
-        if (sweepTimer_.hasPending()) //If sweep is running, stop
-            sweepTimer_.stop();
+        sweepTimer_.stop();
 
-        setCurrentCameraSuscriber(currentFrameID_);
+        setCurrentCameraSuscriber(req.camera_frame_id);
 
         res.new_camera_index = getCurrentCameraIndex();
         res.new_camera_frame_id = currentFrameID_;
@@ -231,8 +229,10 @@ namespace camera_signalman {
 
         int msPerCam = (req.ms_per_cam == 0) ? 1000 : req.ms_per_cam;
 
-        if (sweepTimer_.hasPending()) //Do not override sweep
-            return false;
+        ROS_INFO("Running sweep with tick speed of %d ms", msPerCam);
+
+        //Stops if running
+        sweepTimer_.stop();
 
         sweepcurrentIndex_ = distance(subscribers_camera_feeds_frame_ids_.begin(),
                                  std::find(subscribers_camera_feeds_frame_ids_.begin(),
@@ -242,7 +242,7 @@ namespace camera_signalman {
 
         sweepStartIndex_ = sweepcurrentIndex_;
 
-        sweepTimer_.setPeriod(ros::Duration(msPerCam/1000));
+        sweepTimer_.setPeriod(ros::Duration(msPerCam/1000.0));
         sweepTimer_.start();
 
         return true;
@@ -252,6 +252,8 @@ namespace camera_signalman {
 
         sweepcurrentIndex_ = (sweepcurrentIndex_ + 1) % subscribers_camera_feeds_frame_ids_.size();
         currentFrameID_ = subscribers_camera_feeds_frame_ids_[sweepcurrentIndex_];
+
+        ROS_INFO("Sweep tick! Now on %s", currentFrameID_.c_str());
 
         if (sweepcurrentIndex_ == sweepStartIndex_)
             sweepTimer_.stop();
