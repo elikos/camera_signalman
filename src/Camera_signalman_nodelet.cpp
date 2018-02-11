@@ -12,20 +12,20 @@ namespace camera_signalman {
 
     void Camera_signalman_nodelet::onInit() {
 
-        ROS_INFO("Init");
+        ROS_INFO("[camera_signalman] Init");
 
         nodeHandle_ = this->getPrivateNodeHandle();
 
         // Read parameters from config file.
         if (!readParameters()) {
-            ROS_FATAL("Error in config read. Shutting down!");
+            ROS_FATAL("[camera_signalman] Error in config read. Shutting down!");
             ros::requestShutdown();
         }
 
 
         init();
 
-        ROS_INFO("Launched");
+        ROS_INFO("[camera_signalman] Launched");
     }
 
     bool Camera_signalman_nodelet::readParameters() {
@@ -51,7 +51,7 @@ namespace camera_signalman {
         //***
 
         if (subscribers_camera_feeds_topics_.empty()) {
-            ROS_FATAL("No subscribed feeds are specified in config. Aboding");
+            ROS_FATAL("[camera_signalman] No subscribed feeds are specified in config. Aboding");
             return false;
         }
 
@@ -72,7 +72,7 @@ namespace camera_signalman {
         //***
 
         if (publisher_topic_.empty()) {
-            ROS_FATAL("The publish topic is not specified in config. Aboding");
+            ROS_FATAL("[camera_signalman] The publish topic is not specified in config. Abording");
             return false;
         }
 
@@ -127,6 +127,8 @@ namespace camera_signalman {
                                               &Camera_signalman_nodelet::sweepTimerCallback,
                                               this);
 
+        sweepTimer_.stop();
+
         //sweep_cameras
         sweepCamerasServiceServer_ = nodeHandle_.advertiseService("/camera_signalman/sweep_cameras",
                                                                    &Camera_signalman_nodelet::sweepCamerasServiceCallback,
@@ -170,7 +172,7 @@ namespace camera_signalman {
 
             currentFrameID_ = frameID;
 
-            ROS_INFO("Subscribed to %s (%s)", currentFrameID_.c_str(), frameIDsAndTopicsMap_[currentFrameID_].c_str());
+            ROS_INFO("[camera_signalman] Subscribed to %s (%s)", currentFrameID_.c_str(), frameIDsAndTopicsMap_[currentFrameID_].c_str());
         }
 
         return validTopic;
@@ -229,7 +231,7 @@ namespace camera_signalman {
 
         int msPerCam = (req.ms_per_cam == 0) ? 1000 : req.ms_per_cam;
 
-        ROS_INFO("Running sweep with tick speed of %d ms", msPerCam);
+        ROS_INFO("[camera_signalman] Running sweep with tick speed of %d ms", msPerCam);
 
         //Stops if running
         sweepTimer_.stop();
@@ -253,9 +255,12 @@ namespace camera_signalman {
         sweepcurrentIndex_ = (sweepcurrentIndex_ + 1) % subscribers_camera_feeds_frame_ids_.size();
         currentFrameID_ = subscribers_camera_feeds_frame_ids_[sweepcurrentIndex_];
 
-        ROS_INFO("Sweep tick! Now on %s", currentFrameID_.c_str());
+        ROS_INFO("[camera_signalman] Sweep tick! Now on %s", currentFrameID_.c_str());
 
-        if (sweepcurrentIndex_ == sweepStartIndex_)
+        if (sweepcurrentIndex_ == sweepStartIndex_){
             sweepTimer_.stop();
+            ROS_INFO("[camera_signalman] Sweep stopped");
+        }
+
     }
 }
